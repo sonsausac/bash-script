@@ -1,0 +1,28 @@
+#!/bin/bash
+
+ZONE_ID=<Zone ID>
+A_record=thaison.cloud
+A_record_id=fb84e0244d6955c5b803f5a5d15589c8
+
+CF_BEARER=<token>
+
+LOG_FILE="./ip_log.txt"
+DNS_UPDATE_LOG_FILE="./update_dns_history.log"
+
+IP=$(curl -s https://ipinfo.io/ip)
+     
+if [[ -n "$IP" ]]; then
+    DATE_TIME=$(date +"%Y-%m-%d %H:%M:%S")
+    LAST_IP=$(tail -n 1 "$LOG_FILE" | awk '{print $4}')
+    
+    if [ "$LAST_IP" != "$IP" ]; then
+
+        DATA_TO_UPDATE="{\"type\":\"A\",\"name\":\"$A_record\",\"content\":\"$IP\",\"ttl\":60,\"proxied\":false}"
+        curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/"$ZONE_ID"/dns_records/"$A_record_id -H "Authorization: Bearer ${CF_BEARER}" -H "Content-Type:application/json" --data $DATA_TO_UPDATE >> ${DNS_UPDATE_LOG_FILE}
+        echo "${DATE_TIME} - ${IP}" >> "$LOG_FILE"
+         
+    fi
+fi
+
+# get records
+#curl https://api.cloudflare.com/client/v4/zones/"$ZONE_ID"/dns_records -H "Authorization: Bearer ${CF_BEARER}"
